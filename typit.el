@@ -111,6 +111,15 @@ yet.")
 
 If no dictionary is loaded, it's NIL.")
 
+(defvar typit--dict-num-words 200
+  "Number of words to use from the dictionary.")
+
+(defvar typit--literature-text nil
+  "Text used for literature-test.")
+
+(defvar typit--pick-word-function nil
+  "Function used by `typit--pick-word' to pick the next word.")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Low-level functions
@@ -131,15 +140,26 @@ If no dictionary is loaded, it's NIL.")
                  (point-max))
                 "\n" t "[[:space:]]*")))))))
 
-(defun typit--pick-word (num)
+(defun typit--prepare-literature ()
+  )
+
+(defun typit--pick-word ()
+  "Pick a word using `typit--pick-word-function'"
+     (funcall typit--pick-word-function))
+
+(defun typit--pick-word-from-dict ()
   "Pick a word from `typit--dict'.
 
 Use first NUM words from loaded dictionary (if NUM is bigger than
 length of the dictionary, use all words).  All words in
 `typit--dict' have approximately the same probability."
-  (elt typit--dict (random (min num (length typit--dict)))))
+  (elt typit--dict (random (min typit--dict-num-words
+                           (length typit--dict)))))
 
-(defun typit--generate-line (num)
+(defun typit--pick-word-from-file ()
+  "literature")
+
+(defun typit--generate-line ()
   "Generate a line of appropriate length picking random words.
 
 NUM is the number of words to use from loaded dictionary (if NUM
@@ -153,7 +173,7 @@ between each word (then total length should be close to
   (let ((words nil)
         (acc   0))
     (while (< acc typit-line-length)
-      (let ((word (typit--pick-word num)))
+      (let ((word (typit--pick-word)))
         (setq acc
               (+ acc
                  (length word)
@@ -253,13 +273,11 @@ The window is guaranteed to be killed at the end of the day."
      good-strokes
      bad-strokes
      good-words
-     bad-words
-     num)
-  "Report results of Typit test to the user.
+     bad-words)
+  "Report results of Typit test to the user and prompt to play again.
 
 TOTAL-TIME, GOOD-STROKES, BAD-STROKES, GOOD-WORDS, and BAD-WORDS
-are used to calculate statistics.  NUM is the number of words to
-use as argument of `typit-test' if user chooses to play again."
+are used to calculate statistics."
   (typit--with-buffer
     ;; quit-function
     (lambda (_window _buffer)
@@ -267,10 +285,10 @@ use as argument of `typit-test' if user chooses to play again."
                    (read-char "Press space bar to continue…" t)
                    32)))
       (when (y-or-n-p "Would you like to play again? ")
-        (typit-test num)))
+        (typit--test)))
     ;; body
     (insert
-     (propertize "Your results" 'face 'typit-title)
+     (propertize (format "Your results (%s second timer)" typit-test-time) 'face 'typit-title)
      "\n\n"
      (propertize "Words per minute (WPM)" 'face 'typit-statistic)
      "  "
@@ -301,22 +319,11 @@ use as argument of `typit-test' if user chooses to play again."
                  'face 'typit-value)
      "\n")))
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Top-level interface
-
-;;;###autoload
-(defun typit-test (num)
-  "Run typing test with using NUM most common words from dictionary.
-
-Dictionary is an array of words in `typit-dict'.  By default it's
-English words ordered from most common to least common.  You can
-let-bind the variable and change it, it's recommended to use at
-least 1000 words so `typit-advanced-test' could work properly."
-  (interactive "p")
+(defun typit--test ()
+  "Run typing test."
   (typit--prepare-dict)
-  (let ((first-line   (typit--generate-line num))
-        (second-line  (typit--generate-line num))
+  (let ((first-line   (typit--generate-line))
+        (second-line  (typit--generate-line))
         (test-started nil)
         (init-offset  0)
         (word-offset  0)
@@ -351,7 +358,7 @@ least 1000 words so `typit-advanced-test' could work properly."
                     first-line
                     (or r second-line)
                     second-line
-                    (if r second-line (typit--generate-line num))
+                    (if r second-line (typit--generate-line))
                     word-offset
                     (if r (+ word-offset 1 (length w)) init-offset)
                     good-strokes
@@ -389,8 +396,7 @@ least 1000 words so `typit-advanced-test' could work properly."
          good-strokes
          bad-strokes
          good-words
-         bad-words
-         num))
+         bad-words))
       ;; ↓ body (construction of the buffer contents)
       (insert (propertize "Typit" 'face 'typit-title) "\n\n")
       (setq init-offset (point)
@@ -398,21 +404,49 @@ least 1000 words so `typit-advanced-test' could work properly."
       (typit--render-lines init-offset first-line second-line)
       (typit--select-word word-offset (car first-line)))))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Top-level interface
+
+;;;###autoload
+(defun typit-dictionary-test (num)
+  "Run typing test with using NUM most common words from dictionary.
+
+Dictionary is an array of words in `typit-dict'.  By default it's
+English words ordered from most common to least common.  You can
+let-bind the variable and change it, it's recommended to use at
+least 1000 words so `typit-advanced-test' could work properly."
+  (interactive "p")
+  (typit--prepare-dict)
+  (setq typit--dict-num-words num
+        typit--pick-word-function 'typit--pick-word-from-dict)
+  (typit--test))
+
 ;;;###autoload
 (defun typit-basic-test ()
-  "Basic typing test (top 200 words).
+  "Basic typing test (top 200 words in dictionary).
 
-See `typit-test' for more information."
+See `typit-dictionary-test' for more information."
   (interactive)
-  (typit-test 200))
+  (typit-dictionary-test 200))
 
 ;;;###autoload
 (defun typit-advanced-test ()
-  "Advanced typing test (top 1000 words).
+  "Advanced typing test (top 1000 words in dictionary).
 
-See `typit-test' for more information."
+See `typit-dictionary-test' for more information."
   (interactive)
-  (typit-test 1000))
+  (typit-dictionary-test 1000))
+
+;;;###autoload
+(defun typit-literature-test ()
+  "Typing test with text taken from a pre-defined text file.
+
+See `typit--literature-text-file'."
+  (interactive)
+  (typit--prepare-literature)
+  (setq typit--pick-word-function 'typit--pick-word-from-file)
+  (typit--test))
 
 (provide 'typit)
 
