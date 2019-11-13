@@ -114,11 +114,17 @@ If no dictionary is loaded, it's NIL.")
 (defvar typit--dict-num-words 200
   "Number of words to use from the dictionary.")
 
-(defvar typit--literature-text nil
-  "Text used for literature-test.")
+(defvar typit--literature-file nil
+  "Text file used for `typit-literature-test'.")
+
+(defvar typit--literature-words nil
+  "Text used for `typit-literature-test'.")
 
 (defvar typit--pick-word-function nil
   "Function used by `typit--pick-word' to pick the next word.")
+
+(defvar typit--next-word nil
+  "The next word to be used.")
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -141,7 +147,7 @@ If no dictionary is loaded, it's NIL.")
                 "\n" t "[[:space:]]*")))))))
 
 (defun typit--prepare-literature ()
-  )
+  (setf typit--literature-words (split-string "Bannana Man breaking the land speed record on his unicycle. He speeds across the mud flats in a streak of blue and yellow. Close behind him is Gordon Ramsay in a motorised bathtub, and in third place, Tony Blair riding Rod Hull and Emu. Grotbags isn't taking part this year because she's going to a birthday party with Telechat. It's windy out!")))
 
 (defun typit--pick-word ()
   "Pick a word using `typit--pick-word-function'"
@@ -157,29 +163,38 @@ length of the dictionary, use all words).  All words in
                            (length typit--dict)))))
 
 (defun typit--pick-word-from-file ()
-  "literature")
+  "Pick a word from `typit--literature-text'."
+  (if (not typit--literature-words)
+      (typit--prepare-literature))
+  (pop typit--literature-words))
 
 (defun typit--generate-line ()
-  "Generate a line of appropriate length picking random words.
+  "Generate a line of appropriate length picking words with `typit--pick-word'.
 
-NUM is the number of words to use from loaded dictionary (if NUM
-is bigger than length of the dictionary, use all words).
+Result is returned as a list of strings with assumption that only
+one space is inserted between each word (then total length should
+be close to `typit-line-length')."
 
-This uses words from `typit--dict', which should be initialized
-by the time the function is called.  Result is returned as a list
-of strings with assumption that only one space is inserted
-between each word (then total length should be close to
-`typit-line-length')."
+  (if (not typit--next-word)
+      (setq typit--next-word (typit--pick-word)))
+
   (let ((words nil)
         (acc   0))
     (while (< acc typit-line-length)
-      (let ((word (typit--pick-word)))
+      ;; (let ((word (typit--pick-word)))
         (setq acc
               (+ acc
-                 (length word)
+                 (length typit--next-word)
                  (if words 1 0)))
-        (push word words)))
-    (cdr words)))
+
+        (push typit--next-word words)
+
+        (setq typit--next-word (typit--pick-word))
+
+        )
+
+    ;; (reverse (cdr words))))
+    (reverse words)))
 
 (defun typit--render-line (words)
   "Transform list of words WORDS into one string."
