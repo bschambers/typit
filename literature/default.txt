@@ -1,8 +1,8 @@
 This is the default text for typit literature test.
 
-In order to use your own text, either insert it into this file or set the value
-of the variable typit--literature-file to point at the file which you want to
-use.
+In order to use your own text, navigate to the desired text file and position
+the cursor at the point where you would like the test to begin, then type M-x
+typit-set-marker-for-literature-test.
 
 DEFAULT TEXT FOLLOWS:
 
