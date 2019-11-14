@@ -122,8 +122,12 @@ If no dictionary is loaded, it's NIL.")
 (defvar typit--dict-num-words 200
   "Number of words to use from the dictionary.")
 
-(defvar typit--literature-file "default.txt"
-  "File name of the text file used for `typit-literature-test'.")
+(defvar typit--literature-file nil
+  "File name of the text file used for `typit-literature-test'.
+
+The default value is NIL. The literature file is included in
+save-state - if it is still NIL after `typit--load-state' then
+the default file will be chosen.")
 
 (defvar typit--literature-file-marker 0
   "Current position in the literature file.")
@@ -152,12 +156,12 @@ Courtesy of Stack Overflow user Trey Jackson."
     (let ((buf (find-file-noselect filename)))
       (set-buffer buf)
       (erase-buffer)
-      (typit--dump varlist buf)
+      (typit--dump-vars-to-buffer varlist buf)
       (save-buffer)
       (kill-buffer))))
 
-(defun typit--dump (varlist buffer)
-  "Insert into buffer the setq statement to recreate the variables in VARLIST.
+(defun typit--dump-vars-to-buffer (varlist buffer)
+  "Insert into buffer the setq statements to recreate the variables in VARLIST.
 
 Courtesy of Stack Overflow user Trey Jackson."
   (loop for var in varlist do
@@ -166,7 +170,8 @@ Courtesy of Stack Overflow user Trey Jackson."
 
 (defun typit--save-state ()
   (typit--dump-vars-to-file
-   '(typit--literature-file-marker)
+   '(typit--literature-file
+     typit--literature-file-marker)
    typit--state-file))
 
 (defun typit--load-state ()
@@ -196,28 +201,31 @@ Courtesy of Stack Overflow user Trey Jackson."
 
 (defun typit--prepare-literature ()
 
+  ;; make sure that we don't carry over the last word loaded in previous test
   (setq typit--next-word nil)
-
-  (let ((text-file (f-expand typit--literature-file typit-literature-dir)))
-    (if (not (f-exists? text-file))
-        (error "file does not exist: %s" text-file))
-    (setq typit--literature-words
-          (with-temp-buffer
-            (insert-file-contents text-file)
-            (if (or (< typit--literature-file-marker (point-min))
-                    (> typit--literature-file-marker (point-max)))
-                (setq typit--literature-file-marker (point-min)))
-            ;; make sure that we're not part-way through a word
-            (goto-char typit--literature-file-marker)
-            (backward-word)
-            (setq typit--literature-file-marker (point))
-            ;; get a substantial chunk of text for use in test
-            (let ((end-point (+ 3000 typit--literature-file-marker)))
-              (if (> end-point (point-max))
-                  (setq end-point (point-max)))
-              (split-string
-               (buffer-substring-no-properties typit--literature-file-marker end-point)
-               "[ \f\t\n\r\v]+" t "[[:space:]]*"))))))
+  ;; make sure that literature file is set up
+  (if (not typit--literature-file)
+      (setq typit--literature-file (f-expand "default.txt" typit-literature-dir)))
+  (if (not (f-exists? typit--literature-file))
+      (error "file does not exist: %s" typit--literature-file))
+  ;; get words from file
+  (setq typit--literature-words
+        (with-temp-buffer
+          (insert-file-contents typit--literature-file)
+          (if (or (< typit--literature-file-marker (point-min))
+                  (> typit--literature-file-marker (point-max)))
+              (setq typit--literature-file-marker (point-min)))
+          ;; make sure that we're not part-way through a word
+          (goto-char typit--literature-file-marker)
+          (backward-word)
+          (setq typit--literature-file-marker (point))
+          ;; get a substantial chunk of text for use in test
+          (let ((end-point (+ 3000 typit--literature-file-marker)))
+            (if (> end-point (point-max))
+                (setq end-point (point-max)))
+            (split-string
+             (buffer-substring-no-properties typit--literature-file-marker end-point)
+             "[ \f\t\n\r\v]+" t "[[:space:]]*")))))
 
 (defun typit--pick-word ()
   "Pick a word using `typit--pick-word-function'"
@@ -356,9 +364,7 @@ The window is guaranteed to be killed at the end of the day."
       (case (read-char "Choose an option: (q)uit | (p)lay again | (v)isit file at point")
             ((?q ?Q) (message "quit"))
             ((?p ?P) (typit--test))
-            ((?v ?V) (progn
-                       (find-file (f-expand typit--literature-file typit-literature-dir))
-                       (goto-char typit--literature-file-marker)))
+            ((?v ?V) (typit-visit-literature-file))
             (t (setf loop-again t))))))
 
 (defun typit--report-results
@@ -376,7 +382,7 @@ are used to calculate statistics."
   (if (typit--literature-mode-p)
       (incf typit--literature-file-marker (+ good-strokes bad-strokes)))
 
-  ;; save state to file
+  ;; save current state to file
   (typit--save-state)
 
   (typit--with-buffer
@@ -392,8 +398,13 @@ are used to calculate statistics."
      (propertize
       (if (typit--literature-mode-p)
           (format "Literature Test --- File: %s --- position: %d"
-                  typit--literature-file typit--literature-file-marker)
+                  (f-filename typit--literature-file) typit--literature-file-marker)
         (format "Dictionary Test --- %d most common words" typit--dict-num-words))
+      'face 'typit-title)
+     "\n\n"
+     (propertize
+      (if (typit--literature-mode-p)
+          (format "Full file path: %s" typit--literature-file))
       'face 'typit-title)
      "\n\n"
      (propertize (format "Test Duration: %d seconds" typit-test-time) 'face 'typit-title)
@@ -436,7 +447,7 @@ are used to calculate statistics."
   (if (typit--literature-mode-p)
       (typit--prepare-literature)
     (typit--prepare-dict))
-
+  ;; run test
   (let ((first-line   (typit--generate-line))
         (second-line  (typit--generate-line))
         (test-started nil)
@@ -523,6 +534,31 @@ are used to calculate statistics."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Top-level interface
 
+
+(defun typit-set-marker-for-literature-test ()
+  "Sets the current position in current file as start position for `typit-literature-test'.
+
+ERROR if buffer has no filename."
+  (interactive)
+  (if (buffer-file-name)
+      (progn
+        (setq typit--literature-file (buffer-file-name))
+        (setq typit--literature-file-marker (point))
+        (typit--save-state))
+    (error
+     "Error in typit-set-marker-for-literature-test: could not get file name for buffer %s"
+     (buffer-name))))
+
+(defun typit-visit-literature-file ()
+  "Visit the file currently set for use in
+`typit-literature-test' and jump to the current point."
+  (interactive)
+  ;; if typit literature test hasn't been run then the variable will be NIL
+  (if (not typit--literature-file)
+      (typit--load-state))
+  (find-file (f-expand typit--literature-file typit-literature-dir))
+  (goto-char typit--literature-file-marker))
+
 ;;;###autoload
 (defun typit-dictionary-test (num)
   "Run typing test with using NUM most common words from dictionary.
@@ -532,7 +568,6 @@ English words ordered from most common to least common.  You can
 let-bind the variable and change it, it's recommended to use at
 least 1000 words so `typit-advanced-test' could work properly."
   (interactive "p")
-  (typit--prepare-dict)
   (setq typit--dict-num-words num
         typit--pick-word-function 'typit--pick-word-from-dict)
   (typit--test))
@@ -559,10 +594,6 @@ See `typit-dictionary-test' for more information."
 
 See `typit--literature-text-file'."
   (interactive)
-
-  (setq typit--next-word nil)
-
-  (typit--prepare-literature)
   (setq typit--pick-word-function 'typit--pick-word-from-file)
   (typit--test))
 
