@@ -25,11 +25,20 @@
 
 ;;; Commentary:
 
-;; This is a typing game for Emacs.  In this game, you type words that are
-;; picked randomly from N most frequent words in language you're practicing,
-;; until time is up (by default it's one minute).  Typit is quite similar to
-;; the “10 fast fingers” tests, with the difference that it's playable and
-;; fully configurable inside your Emacs.
+;; This is a typing game for Emacs. In this game, you type as many words as you can
+;; until time is up (by default it's one minute).
+;;
+;; There are two different types of play on offer:
+;;
+;; * Dictionary test: where you type words that are picked randomly from N most
+;;   frequent words in the language you're practicing. This is quite similar to the
+;;   “10 fast fingers” tests, with the difference that it's playable and fully
+;;   configurable inside your Emacs.
+;; * Literature test: the gameplay is identical to dictionary test although instead
+;;   of random words picked from a dictionary, you type text from a specified
+;;   file. You can use any text file you like, and Emacs will save your position
+;;   between sessions for convenience so that you will always start just where you
+;;   left off last time.
 
 ;;; Code:
 
