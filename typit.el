@@ -34,6 +34,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'cl)
 (require 'f)
 (require 'mmt)
 
@@ -90,6 +91,13 @@
   :tag  "Directory with dictionary files"
   :type 'directory)
 
+(defcustom typit-literature-dir
+  (when load-file-name
+    (f-slash (f-join (f-parent load-file-name) "literature")))
+  "Path to directory with collection of literature texts."
+  :tag  "Directory with literature texts"
+  :type 'directory)
+
 (defcustom typit-line-length 80
   "Length of line of words to use."
   :tag  "Length of line of words"
@@ -114,8 +122,11 @@ If no dictionary is loaded, it's NIL.")
 (defvar typit--dict-num-words 200
   "Number of words to use from the dictionary.")
 
-(defvar typit--literature-file nil
-  "Text file used for `typit-literature-test'.")
+(defvar typit--literature-file "default.txt"
+  "File name of the text file used for `typit-literature-test'.")
+
+(defvar typit--literature-file-marker 0
+  "Current position in the literature file.")
 
 (defvar typit--literature-words nil
   "Text used for `typit-literature-test'.")
@@ -129,6 +140,11 @@ If no dictionary is loaded, it's NIL.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Low-level functions
+
+(defun typit--literature-mode-p ()
+  "Returns NON-NIL if the most recent test initiated was a
+  literature test."
+  (eq typit--pick-word-function 'typit--pick-word-from-file))
 
 (defun typit--prepare-dict ()
   "Make sure that `typit--dict' and `typit--dict-file' are set."
@@ -147,11 +163,24 @@ If no dictionary is loaded, it's NIL.")
                 "\n" t "[[:space:]]*")))))))
 
 (defun typit--prepare-literature ()
-  (setf typit--literature-words (split-string "Bannana Man breaking the land speed record on his unicycle. He speeds across the mud flats in a streak of blue and yellow. Close behind him is Gordon Ramsay in a motorised bathtub, and in third place, Tony Blair riding Rod Hull and Emu. Grotbags isn't taking part this year because she's going to a birthday party with Telechat. It's windy out!")))
+  (let ((text-file (f-expand typit--literature-file typit-literature-dir)))
+    (if (not (f-exists? text-file))
+        (error "file does not exist: %s" text-file))
+    (setq typit--literature-words
+          (with-temp-buffer
+            (insert-file-contents text-file)
+            (if (or (< typit--literature-file-marker (point-min))
+                    (> typit--literature-file-marker (point-max)))
+                (setq typit--literature-file-marker (point-min)))
+            (split-string
+             (buffer-substring-no-properties
+              typit--literature-file-marker
+              (+ 5000 typit--literature-file-marker))
+             "[ \f\t\n\r\v]+" t "[[:space:]]*")))))
 
 (defun typit--pick-word ()
   "Pick a word using `typit--pick-word-function'"
-     (funcall typit--pick-word-function))
+  (funcall typit--pick-word-function))
 
 (defun typit--pick-word-from-dict ()
   "Pick a word from `typit--dict'.
@@ -182,16 +211,16 @@ be close to `typit-line-length')."
         (acc   0))
     (while (< acc typit-line-length)
       ;; (let ((word (typit--pick-word)))
-        (setq acc
-              (+ acc
-                 (length typit--next-word)
-                 (if words 1 0)))
+      (setq acc
+            (+ acc
+               (length typit--next-word)
+               (if words 1 0)))
 
-        (push typit--next-word words)
+      (push typit--next-word words)
 
-        (setq typit--next-word (typit--pick-word))
+      (setq typit--next-word (typit--pick-word))
 
-        )
+      )
 
     ;; (reverse (cdr words))))
     (reverse words)))
@@ -293,6 +322,11 @@ The window is guaranteed to be killed at the end of the day."
 
 TOTAL-TIME, GOOD-STROKES, BAD-STROKES, GOOD-WORDS, and BAD-WORDS
 are used to calculate statistics."
+
+  ;; update file position for literature mode
+  (if (typit--literature-mode-p)
+      (incf typit--literature-file-marker (+ good-strokes bad-strokes)))
+
   (typit--with-buffer
     ;; quit-function
     (lambda (_window _buffer)
@@ -303,7 +337,16 @@ are used to calculate statistics."
         (typit--test)))
     ;; body
     (insert
-     (propertize (format "Your results (%s second timer)" typit-test-time) 'face 'typit-title)
+     (propertize "Your results" 'face 'typit-title)
+     "\n\n"
+     (propertize
+      (if (typit--literature-mode-p)
+          (format "Literature Test --- File: %s --- position: %d"
+                  typit--literature-file typit--literature-file-marker)
+        (format "Dictionary Test --- %d most common words" typit--dict-num-words))
+      'face 'typit-title)
+     "\n\n"
+     (propertize (format "Test Duration: %d seconds" typit-test-time) 'face 'typit-title)
      "\n\n"
      (propertize "Words per minute (WPM)" 'face 'typit-statistic)
      "  "
@@ -336,7 +379,11 @@ are used to calculate statistics."
 
 (defun typit--test ()
   "Run typing test."
-  (typit--prepare-dict)
+  ;; setup
+  (if (typit--literature-mode-p)
+      (typit--prepare-literature)
+      (typit--prepare-dict))
+
   (let ((first-line   (typit--generate-line))
         (second-line  (typit--generate-line))
         (test-started nil)
