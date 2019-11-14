@@ -163,20 +163,29 @@ If no dictionary is loaded, it's NIL.")
                 "\n" t "[[:space:]]*")))))))
 
 (defun typit--prepare-literature ()
+
+  (setq typit--next-word nil)
+
   (let ((text-file (f-expand typit--literature-file typit-literature-dir)))
-    (if (not (f-exists? text-file))
-        (error "file does not exist: %s" text-file))
-    (setq typit--literature-words
-          (with-temp-buffer
-            (insert-file-contents text-file)
-            (if (or (< typit--literature-file-marker (point-min))
-                    (> typit--literature-file-marker (point-max)))
-                (setq typit--literature-file-marker (point-min)))
-            (split-string
-             (buffer-substring-no-properties
-              typit--literature-file-marker
-              (+ 5000 typit--literature-file-marker))
-             "[ \f\t\n\r\v]+" t "[[:space:]]*")))))
+        (if (not (f-exists? text-file))
+            (error "file does not exist: %s" text-file))
+        (setq typit--literature-words
+              (with-temp-buffer
+                (insert-file-contents text-file)
+                (if (or (< typit--literature-file-marker (point-min))
+                        (> typit--literature-file-marker (point-max)))
+                    (setq typit--literature-file-marker (point-min)))
+                ;; make sure that we're not part-way through a word
+                (goto-char typit--literature-file-marker)
+                (backward-word)
+                (setq typit--literature-file-marker (point))
+                ;; get a substantial chunk of text for use in test
+                (let ((end-point (+ 3000 typit--literature-file-marker)))
+                  (if (> end-point (point-max))
+                      (setq end-point (point-max)))
+                  (split-string
+                   (buffer-substring-no-properties typit--literature-file-marker end-point)
+                   "[ \f\t\n\r\v]+" t "[[:space:]]*"))))))
 
 (defun typit--pick-word ()
   "Pick a word using `typit--pick-word-function'"
@@ -514,6 +523,9 @@ See `typit-dictionary-test' for more information."
 
 See `typit--literature-text-file'."
   (interactive)
+
+  (setq typit--next-word nil)
+
   (typit--prepare-literature)
   (setq typit--pick-word-function 'typit--pick-word-from-file)
   (typit--test))
