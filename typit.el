@@ -203,26 +203,21 @@ length of the dictionary, use all words).  All words in
 Result is returned as a list of strings with assumption that only
 one space is inserted between each word (then total length should
 be close to `typit-line-length')."
-
+  ;; when we exceed line-length we want save NEXT-WORD to go at the beginning of
+  ;; the next line
   (if (not typit--next-word)
       (setq typit--next-word (typit--pick-word)))
-
   (let ((words nil)
         (acc   0))
     (while (< acc typit-line-length)
-      ;; (let ((word (typit--pick-word)))
       (setq acc
             (+ acc
                (length typit--next-word)
                (if words 1 0)))
-
       (push typit--next-word words)
-
-      (setq typit--next-word (typit--pick-word))
-
-      )
-
-    ;; (reverse (cdr words))))
+      (setq typit--next-word (typit--pick-word)))
+    ;; reverse list to get text in right order for literature test
+    ;; ... doesn't matter for dictionary test
     (reverse words)))
 
 (defun typit--render-line (words)
@@ -312,6 +307,19 @@ The window is guaranteed to be killed at the end of the day."
           (setq cursor-type nil)
           ,@body)))))
 
+(defun typit--run-end-of-test-options ()
+  "Prompt user to play again, plus any mode-specific options."
+  (let ((loop-again t))
+    (while loop-again
+      (setf loop-again nil)
+      (case (read-char "Choose an option: (q)uit | (p)lay again | (v)isit file at point")
+        ((?q ?Q) (message "quit"))
+        ((?p ?P) (typit--test))
+        ((?v ?V) (progn
+                (find-file (f-expand typit--literature-file typit-literature-dir))
+                (goto-char typit--literature-file-marker)))
+        (t (setf loop-again t))))))
+
 (defun typit--report-results
     (total-time
      good-strokes
@@ -333,12 +341,10 @@ are used to calculate statistics."
       (while (not (char-equal
                    (read-char "Press space bar to continue…" t)
                    32)))
-      (when (y-or-n-p "Would you like to play again? ")
-        (typit--test)))
+      (typit--run-end-of-test-options))
+
     ;; body
     (insert
-     (propertize "Your results" 'face 'typit-title)
-     "\n\n"
      (propertize
       (if (typit--literature-mode-p)
           (format "Literature Test --- File: %s --- position: %d"
@@ -347,6 +353,8 @@ are used to calculate statistics."
       'face 'typit-title)
      "\n\n"
      (propertize (format "Test Duration: %d seconds" typit-test-time) 'face 'typit-title)
+     "\n\n"
+     (propertize "Your results" 'face 'typit-title)
      "\n\n"
      (propertize "Words per minute (WPM)" 'face 'typit-statistic)
      "  "
