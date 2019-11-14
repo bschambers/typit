@@ -4,11 +4,20 @@
 [![MELPA](https://melpa.org/packages/typit-badge.svg)](https://melpa.org/#/typit)
 [![Build Status](https://travis-ci.org/mrkkrp/typit.svg?branch=master)](https://travis-ci.org/mrkkrp/typit)
 
-This is a typing game for Emacs. In this game, you type words that are
-picked randomly from N most frequent words in language you're practicing,
-until time is up (by default it's one minute). Typit is quite similar to the
-“10 fast fingers” tests, with the difference that it's playable and fully
-configurable inside your Emacs.
+This is a typing game for Emacs. In this game, you type as many words as you can
+until time is up (by default it's one minute).
+
+There are two different types of play on offer:
+
+* dictionary test: Where you type words that are picked randomly from N most
+  frequent words in the language you're practicing. This is quite similar to the
+  “10 fast fingers” tests, with the difference that it's playable and fully
+  configurable inside your Emacs.
+* literature test: The gameplay is identical to the dictionary test although
+  instead of random words picked from a dictionary, you type text from a
+  specified file. You can use text file you like, and Emacs will save your
+  position between sessions for convenience so that you will always start just
+  where you left off last time.
 
 ![Typit typing](https://raw.githubusercontent.com/mrkkrp/typit/gh-pages/typit-typing.png)
 
@@ -22,17 +31,36 @@ RET</kbd>.
 
 ## Usage
 
-Type <kbd>M-x typit-basic-test RET</kbd> and Typit window should appear (see
-the picture above). Timer will start when you start typing. When you are
-done, the following statistics will appear:
+Use one of these commands to launch Typit:
+
+* <kbd>M-x typit-basic-test RET</kbd>: dictionary test using the 200 most common
+  words in the dictionary.
+* <kbd>M-x typit-advanced-test RET</kbd>: dictionary test using the 1000 most
+  common words in the dictionary.
+* <kbd>M-x typit-dictionary-test RET</kbd>: dictionary test with a numeric
+  argument specifying how many words to use (note that default dictionary has
+  1000 words total at the moment).
+* <kbd>M-x typit-literature-test RET</kbd>: literature test using the currently
+  saved literature file, or the default file if no other has been chosen.
+
+The Typit window should appear (see the picture above). Timer will start when
+you start typing. When you are done, the following statistics will appear:
 
 ![Typit results](https://raw.githubusercontent.com/mrkkrp/typit/gh-pages/typit-results.png)
 
-If you're feeling like a master, you can try <kbd>M-x typit-advanced-test
-RET</kbd> which uses 1000 most common English words (`typit-basic-test` uses
-200 most common ones). You can also call a more general `typit-test` with a
-numeric argument specifying how many words to use (note that default
-dictionary has 1000 words total at the moment).
+Some other useful user commands are also provided:
+
+* <kbd>M-x typit-visit-literature-file</kbd>: visit the current literature file
+  and jump to the current point.
+* <kbd>M-x typit-set-marker-for-literature-test</kbd>: sets the starting point
+  for `typit-literature-test` to the current point in the current file.
+
+## Save-state file
+
+Typit saves the values of some variables to file in order to ensure continuity
+between sessions.
+
+The default save file is `~/.emacs.d/.typit`
 
 ## Customization
 
