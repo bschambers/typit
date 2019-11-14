@@ -9,11 +9,11 @@ until time is up (by default it's one minute).
 
 There are two different types of play on offer:
 
-* dictionary test: Where you type words that are picked randomly from N most
+* Dictionary test: where you type words that are picked randomly from N most
   frequent words in the language you're practicing. This is quite similar to the
   “10 fast fingers” tests, with the difference that it's playable and fully
   configurable inside your Emacs.
-* literature test: The gameplay is identical to the dictionary test although
+* Literature test: the gameplay is identical to the dictionary test although
   instead of random words picked from a dictionary, you type text from a
   specified file. You can use text file you like, and Emacs will save your
   position between sessions for convenience so that you will always start just
