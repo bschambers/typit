@@ -34,6 +34,7 @@
 ;;   frequent words in the language you're practicing. This is quite similar to the
 ;;   “10 fast fingers” tests, with the difference that it's playable and fully
 ;;   configurable inside your Emacs.
+;;
 ;; * Literature test: the gameplay is identical to dictionary test although instead
 ;;   of random words picked from a dictionary, you type text from a specified
 ;;   file. You can use any text file you like, and Emacs will save your position
@@ -118,7 +119,7 @@
   :type 'integer)
 
 (defvar typit--dict nil
-  "Vector of words to use (from most common to least common).
+  "Vector of words to use for `typit-dictionary-test' (ordered from most common to least common).
 
 If the value is NIL, it means that no dictionary has been loaded
 yet.")
@@ -142,7 +143,7 @@ the default file will be chosen.")
   "Current position in the literature file.")
 
 (defvar typit--literature-words nil
-  "Text used for `typit-literature-test'.")
+  "List of words used for `typit-literature-test'.")
 
 (defvar typit--pick-word-function nil
   "Function used by `typit--pick-word' to pick the next word.")
@@ -156,6 +157,8 @@ the default file will be chosen.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Low-level functions
+
+;; Loading and saving
 
 (defun typit--dump-vars-to-file (varlist filename)
   "Simplistic dumping of variables in VARLIST to a file FILENAME.
@@ -187,6 +190,18 @@ Courtesy of Stack Overflow user Trey Jackson."
   (if (f-exists-p typit--state-file)
       (load typit--state-file)))
 
+;; Text processing
+
+(defun typit--split-string-retain-newlines (text)
+  "Splits TEXT on whitespace whilst retaining newline characters.
+
+Newline characters are included as separate words but empty
+strings are discarded."
+  (seq-filter (lambda (x) (not (string-empty-p x)))
+              (split-string
+               (replace-regexp-in-string "\n" " \n " text)
+               "[ \f\t\r\v]+")))
+
 (defun typit--literature-mode-p ()
   "Returns NON-NIL if the most recent test initiated was a
   literature test."
@@ -209,7 +224,7 @@ Courtesy of Stack Overflow user Trey Jackson."
                 "\n" t "[[:space:]]*")))))))
 
 (defun typit--prepare-literature ()
-
+  "Setup `typit--literature-words'."
   ;; make sure that we don't carry over the last word loaded in previous test
   (setq typit--next-word nil)
   ;; make sure that literature file is set up
@@ -533,7 +548,9 @@ are used to calculate statistics."
          good-words
          bad-words))
       ;; ↓ body (construction of the buffer contents)
-      (insert (propertize "Typit" 'face 'typit-title) "\n\n")
+      (insert (propertize
+               (format "Typit (%d second test)" typit-test-time)
+               'face 'typit-title) "\n\n")
       (setq init-offset (point)
             word-offset init-offset)
       (typit--render-lines init-offset first-line second-line)
@@ -601,7 +618,7 @@ See `typit-dictionary-test' for more information."
 (defun typit-literature-test ()
   "Typing test with text taken from a pre-defined text file.
 
-See `typit--literature-text-file'."
+See `typit--literature-file'."
   (interactive)
   (setq typit--pick-word-function 'typit--pick-word-from-file)
   (typit--test))
