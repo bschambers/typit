@@ -132,6 +132,8 @@ If no dictionary is loaded, it's NIL.")
 (defvar typit--dict-num-words 200
   "Number of words to use from the dictionary.")
 
+(defvar typit--paragraph-break-symbol "<<<BREAK>>>")
+
 (defvar typit--literature-file nil
   "File name of the text file used for `typit-literature-test'.
 
@@ -190,17 +192,18 @@ Courtesy of Stack Overflow user Trey Jackson."
   (if (f-exists-p typit--state-file)
       (load typit--state-file)))
 
-;; Text processing
+(defun typit--split-string-convert-paragraph-breaks (text)
+  "Splits TEXT on whitespace whilst converting paragraph breaks `typit--paragraph-break-symbol'.
 
-(defun typit--split-string-retain-newlines (text)
-  "Splits TEXT on whitespace whilst retaining newline characters.
-
-Newline characters are included as separate words but empty
-strings are discarded."
-  (seq-filter (lambda (x) (not (string-empty-p x)))
-              (split-string
-               (replace-regexp-in-string "\n" " \n " text)
-               "[ \f\t\r\v]+")))
+Paragraph break is interpreted as being two or more consecutive
+newlines, optionally with whitespace in between them. Any single
+newline characters along with any other whitespace characters are
+discarded."
+  (seq-filter
+   (lambda (x) (not (string-empty-p x)))
+   (split-string
+    (replace-regexp-in-string "\n[ *\n]+" (concat " " typit--paragraph-break-symbol " ") text)
+    "[ \n\f\t\r\v]+")))
 
 (defun typit--literature-mode-p ()
   "Returns NON-NIL if the most recent test initiated was a
@@ -244,12 +247,11 @@ strings are discarded."
           (backward-word)
           (setq typit--literature-file-marker (point))
           ;; get a substantial chunk of text for use in test
-          (let ((end-point (+ 3000 typit--literature-file-marker)))
+          (let ((end-point (+ 2000 typit--literature-file-marker)))
             (if (> end-point (point-max))
                 (setq end-point (point-max)))
-            (split-string
-             (buffer-substring-no-properties typit--literature-file-marker end-point)
-             "[ \f\t\n\r\v]+" t "[[:space:]]*")))))
+            (typit--split-string-convert-paragraph-breaks
+             (buffer-substring-no-properties typit--literature-file-marker end-point))))))
 
 (defun typit--pick-word ()
   "Pick a word using `typit--pick-word-function'"
@@ -275,19 +277,26 @@ length of the dictionary, use all words).  All words in
 
 Result is returned as a list of strings with assumption that only
 one space is inserted between each word (then total length should
-be close to `typit-line-length')."
+be close to `typit-line-length').
+
+Line will end early if `typit--paragraph-break-symbol' is
+encountered."
   ;; when we exceed line-length we want save NEXT-WORD to go at the beginning of
   ;; the next line
   (if (not typit--next-word)
       (setq typit--next-word (typit--pick-word)))
   (let ((words nil)
-        (acc   0))
-    (while (< acc typit-line-length)
+        (acc   0)
+        (paragraph-break nil))
+    (while (and (< acc typit-line-length)
+                (not paragraph-break))
       (setq acc
             (+ acc
                (length typit--next-word)
                (if words 1 0)))
       (push typit--next-word words)
+      (if (equal typit--next-word typit--paragraph-break-symbol)
+          (setq paragraph-break t))
       (setq typit--next-word (typit--pick-word)))
     ;; reverse list to get text in right order for literature test
     ;; ... doesn't matter for dictionary test
@@ -426,11 +435,9 @@ are used to calculate statistics."
         (format "Dictionary Test --- %d most common words" typit--dict-num-words))
       'face 'typit-title)
      "\n\n"
-     (propertize
-      (if (typit--literature-mode-p)
-          (format "Full file path: %s" typit--literature-file))
-      'face 'typit-title)
-     "\n\n"
+     (if (typit--literature-mode-p)
+         (propertize (format "Full file path: %s\n\n" typit--literature-file) 'face 'typit-title)
+       "")
      (propertize (format "Test Duration: %d seconds" typit-test-time) 'face 'typit-title)
      "\n\n"
      (propertize "Your results" 'face 'typit-title)
@@ -482,7 +489,7 @@ are used to calculate statistics."
         (good-words   0)
         (bad-words    0)
         (micro-index  0)
-        (current-word nil))
+        (current-word nil)) ; list of booleans (good/bad strokes for current word)
     (typit--with-buffer
       (lambda (window _value)
         (message "Timer will start when you start typing…")
@@ -496,14 +503,16 @@ are used to calculate statistics."
                  (read-char "Typing…" t)))
                ((null ch))
              (cond
-              ;; space
-              ((= ch #x20)
+              ;; space or return
+              ((or (= ch #x20)
+                   (= ch #x0D))
                (when current-word
-                 (typit--select-word word-offset (car first-line) t)
+                 (typit--select-word word-offset (car first-line) t) ; unselect word
                  (cl-destructuring-bind (w . r) first-line
                    (if (cl-every #'identity current-word)
                        (setq good-words (1+ good-words))
                      (setq bad-words (1+ bad-words)))
+                   ;; update variables
                    (setq
                     first-line
                     (or r second-line)
@@ -512,13 +521,30 @@ are used to calculate statistics."
                     word-offset
                     (if r (+ word-offset 1 (length w)) init-offset)
                     good-strokes
-                    (1+ good-strokes) ;; we should count space itself
-                    good-strokes
                     (+ good-strokes (cl-count t current-word))
                     bad-strokes
                     (+ bad-strokes  (cl-count nil current-word))
                     micro-index  0
-                    current-word nil)
+                    current-word nil) ; set current word to nil
+                   ;; check whether next word is paragraph break
+                   (if (equal (car first-line) typit--paragraph-break-symbol)
+                       ;; YES: skip word and end line
+                       (progn
+                         (setq
+                          first-line second-line
+                          second-line (typit--generate-line)
+                          word-offset init-offset
+                          r nil)
+                         ;; RETURN = good/SPACE = bad
+                         (if (= ch #x0D)
+                             (setq good-strokes (1+ good-strokes))
+                           (setq bad-strokes (1+ bad-strokes))))
+                     ;; NOT paragraph break
+                     ;; SPACE = good/RETURN = bad
+                     (if (= ch #x20)
+                         (setq good-strokes (1+ good-strokes))
+                       (setq bad-strokes (1+ bad-strokes))))
+                   ;; if line ended, render new lines
                    (unless r
                      (typit--render-lines init-offset first-line second-line))
                    (typit--select-word word-offset (car first-line)))

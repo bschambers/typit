@@ -3,10 +3,10 @@
 (require 'typit)
 (require 'ert)
 
-(ert-deftest typit-test--split-string-retain-newlines ()
-  (should (equal '("ginger" "ferrari" "\n" "under" "the" "rug.")
-                 (typit--split-string-retain-newlines "ginger ferrari\nunder the rug.")))
-  (should (equal '("bannanas" "\n" "under" "the" "bed" "\n" "convalescing" "\n" "quietly")
-                 (typit--split-string-retain-newlines "bannanas\nunder the bed\nconvalescing\nquietly")))
-  (should (equal '("budgies" "\n" "\n" "\n" "parrots" "&" "dolphins" "\n" "\n")
-                 (typit--split-string-retain-newlines "budgies\n\n\nparrots & dolphins\n\n"))))
+(ert-deftest typit-test--split-string-convert-paragraph-breaks ()
+  (should (equal `("apple" "batcave" "cat" "dog" "entwine" ,typit--paragraph-break-symbol "flapper" "geometry" "handbag" ,typit--paragraph-break-symbol)
+                 (typit--split-string-convert-paragraph-breaks
+                  "apple batcave\ncat dog entwine\n\nflapper geometry\nhandbag\n\n")))
+  (should (equal `("apple" "batcave" "cat" "dog" ,typit--paragraph-break-symbol "entwine" "flapper" "geometry" "handbag")
+                 (typit--split-string-convert-paragraph-breaks
+                  "apple batcave\ncat dog \n \n     \n\nentwine flapper geometry\nhandbag\n"))))
