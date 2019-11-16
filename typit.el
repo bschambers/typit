@@ -297,8 +297,9 @@ The window is guaranteed to be killed at the end of the day."
 
     ;; build options list
     ;; reverse order - mode-specific options first
-    (dolist (item (funcall typit--end-options-function))
-      (push item options))
+    (if typit--end-options-function
+        (dolist (item (funcall typit--end-options-function))
+          (push item options)))
     ;; generic options
     (push '((?p ?P) "(p)lay again" typit--test) options)
     (push '((?q ?Q) "(q)uit" (lambda () (message "quit"))) options)
@@ -331,7 +332,8 @@ TOTAL-TIME, GOOD-STROKES, BAD-STROKES, GOOD-WORDS, and BAD-WORDS
 are used to calculate statistics."
 
   ;; do any end-of-test housekeeping, the save current state
-  (funcall typit--end-of-test-function good-strokes bad-strokes)
+  (if typit--end-of-test-function
+      (funcall typit--end-of-test-function good-strokes bad-strokes))
   (typit--save-state)
 
   (typit--with-buffer
@@ -345,7 +347,8 @@ are used to calculate statistics."
     ;; body
     (insert
      ;; mode-specific text
-     (propertize (funcall typit--report-string-function) 'face 'typit-title)
+     (if typit--report-string-function
+         (propertize (funcall typit--report-string-function) 'face 'typit-title))
      ;; generic info
      (propertize (format "Test Duration: %d seconds" typit-test-time) 'face 'typit-title)
      "\n\n"
@@ -494,6 +497,7 @@ are used to calculate statistics."
 
 (defun typit--run-test (title
                    pick-word-func
+                   &optional
                    init-func
                    end-of-test-func
                    report-info-func

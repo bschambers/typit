@@ -77,11 +77,9 @@ least 1000 words so `typit-advanced-test' could work properly."
   (setq typit-dictionary--dict-num-words num)
   (typit--run-test "Typit Dictionary Test"
                    'typit-dictionary--pick-word
-                   #'typit-dictionary--prepare-dict
-                   (lambda (gs bs))
-                   'typit-dictionary--get-report-string
-                   (lambda () '())
-                   nil))
+                   'typit-dictionary--prepare-dict
+                   nil
+                   'typit-dictionary--get-report-string))
 
 ;;;###autoload
 (defun typit-basic-test ()
