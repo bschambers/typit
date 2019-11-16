@@ -4,15 +4,17 @@
 
 (defcustom typit-dictionary-dict "english.txt"
   "Name of dictionary file to use."
+  :group 'typit
   :tag  "Dictionary to use"
   :type '(choice (const :tag "English" "english.txt")
                  (const :tag "German"  "german.txt")
                  (const :tag "French"  "french.txt")))
 
-(defcustom typit-dictionary-dict-dir
+(defcustom typit-dictionary-dir
   (when load-file-name
     (f-slash (f-join (f-parent load-file-name) "dict")))
   "Path to directory with collection of dictionaries."
+  :group 'typit
   :tag  "Directory with dictionary files"
   :type 'directory)
 
@@ -32,7 +34,7 @@ If no dictionary is loaded, it's NIL.")
 
 (defun typit-dictionary--prepare-dict ()
   "Make sure that `typit--dict' and `typit--dict-file' are set."
-  (let ((dict-file (f-expand typit-dictionary-dict typit-dictionary-dict-dir)))
+  (let ((dict-file (f-expand typit-dictionary-dict typit-dictionary-dir)))
     (when (or (not typit-dictionary--dict-file)
               (not (f-same? typit-dictionary--dict-file dict-file)))
       (setq typit-dictionary--dict-file dict-file
@@ -78,10 +80,11 @@ least 1000 words so `typit-advanced-test' could work properly."
                    #'typit-dictionary--prepare-dict
                    (lambda (gs bs))
                    'typit-dictionary--get-report-string
-                   (lambda () '())))
+                   (lambda () '())
+                   nil))
 
 ;;;###autoload
-(defun typit-dictionary-basic-test ()
+(defun typit-basic-test ()
   "Basic typing test (top 200 words in dictionary).
 
 See `typit-dictionary-test' for more information."
@@ -89,7 +92,7 @@ See `typit-dictionary-test' for more information."
   (typit-dictionary-test 200))
 
 ;;;###autoload
-(defun typit-dictionary-advanced-test ()
+(defun typit-advanced-test ()
   "Advanced typing test (top 1000 words in dictionary).
 
 See `typit-dictionary-test' for more information."

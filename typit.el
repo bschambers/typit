@@ -99,7 +99,7 @@
 (defvar typit--next-word nil
   "The next word to be used.")
 
-(defvar typit--state-save-file "~/.emacs.d/.typit"
+(defvar typit--save-file "~/.emacs.d/.typit"
   "File to save typit state info between sessions.")
 
 
@@ -124,16 +124,17 @@
 (defvar typit--end-options-function nil
   "Returns a list of options to add to the end of game options.")
 
+(defvar typit--save-function nil
+  "Saves any persistent variables for the current mode.")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Low-level functions
 
-(defun typit--dump-vars-to-file (varlist filename)
-  "Simplistic dumping of variables in VARLIST to a file FILENAME.
-
-Courtesy of Stack Overflow user Trey Jackson."
+(defun typit--save-vars-to-file (&rest varlist)
+  "Simplistic dumping of variables in VARLIST into file `typit--save-file'."
   (save-excursion
-    (let ((buf (find-file-noselect filename)))
+    (let ((buf (find-file-noselect typit--save-file)))
       (set-buffer buf)
       (erase-buffer)
       (typit--dump-vars-to-buffer varlist buf)
@@ -147,14 +148,13 @@ Courtesy of Stack Overflow user Trey Jackson."
            buffer)))
 
 (defun typit--save-state ()
-  (typit--dump-vars-to-file
-   '(typit--literature-file
-     typit--literature-file-marker)
-   typit--state-save-file))
+  (if typit--save-function
+      (funcall typit--save-function)))
 
 (defun typit--load-state ()
-  (if (f-exists-p typit--state-save-file)
-      (load typit--state-save-file)))
+  (if (f-exists-p typit--save-file)
+      (load typit--save-file)
+    (error "Save-file does not exist: %s" typit--save-file)))
 
 (defun typit--split-string-convert-paragraph-breaks (text)
   "Splits TEXT on whitespace whilst converting paragraph breaks `typit--paragraph-break-symbol'.
@@ -381,11 +381,12 @@ are used to calculate statistics."
      "\n")))
 
 (defun typit--test ()
-  "Run typing test."
+  "Load stored state, run `init-test-function' then run typing test."
 
   ;; setup
   (typit--load-state)
-  (funcall typit--init-test-function)
+  (if typit--init-test-function
+      (funcall typit--init-test-function))
 
   ;; run test
   (let ((first-line   (typit--generate-line))
@@ -496,13 +497,15 @@ are used to calculate statistics."
                    init-func
                    end-of-test-func
                    report-info-func
-                   end-options-func)
+                   end-options-func
+                   save-func)
   (setq typit--mode-title title
         typit--pick-word-function pick-word-func
         typit--init-test-function init-func
         typit--end-of-test-function end-of-test-func
         typit--report-string-function report-info-func
-        typit--end-options-function end-options-func)
+        typit--end-options-function end-options-func
+        typit--save-function save-func)
   (typit--test))
 
 (provide 'typit)

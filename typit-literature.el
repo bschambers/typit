@@ -2,19 +2,12 @@
 
 (require 'typit)
 
-(defcustom typit-literature-dir
+(defconst typit-literature--default-text-file
   (when load-file-name
-    (f-slash (f-join (f-parent load-file-name) "literature")))
-  "Path to directory with collection of literature texts."
-  :tag  "Directory with literature texts"
-  :type 'directory)
+    (f-join (f-parent load-file-name) "literature" "default.txt")))
 
-(defvar typit-literature--text-file nil
-  "File name of the text file used for `typit-literature-test'.
-
-The default value is NIL. The literature file is included in
-save-state - if it is still NIL after `typit--load-state' then
-the default file will be chosen.")
+(defvar typit-literature--text-file typit-literature--default-text-file
+  "File name of the text file used for `typit-literature-test'.")
 
 (defvar typit-literature--file-marker 0
   "Current position in the literature file.")
@@ -24,12 +17,12 @@ the default file will be chosen.")
 
 (defun typit-literature--pick-word ()
   "Pick a word from `typit--literature-text'."
-  (if (not typit--literature-words)
-      (typit--prepare-literature))
-  (pop typit--literature-words))
+  (if (not typit-literature--words)
+      (typit-literature--prepare-words))
+  (pop typit-literature--words))
 
 (defun typit-literature--prepare-words ()
-  "Setup `typit--literature-words'."
+  "Setup `typit-literature--words'."
   ;; make sure that we don't carry over the last word loaded in previous test
   (setq typit--next-word nil)
   ;; make sure that literature file is set up
@@ -38,7 +31,7 @@ the default file will be chosen.")
   (if (not (f-exists? typit-literature--text-file))
       (error "file does not exist: %s" typit-literature--text-file))
   ;; get words from file
-  (setq typit--literature-words
+  (setq typit-literature--words
         (with-temp-buffer
           (insert-file-contents typit-literature--text-file)
           (if (or (< typit-literature--file-marker (point-min))
@@ -69,6 +62,9 @@ the default file will be chosen.")
 (defun typit-literature--get-end-options ()
   '(((?v V) "(v)isit file at point" typit-visit-literature-file)))
 
+(defun typit-literature--save-state ()
+  (typit--save-vars-to-file 'typit-literature--text-file 'typit-literature--file-marker))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Top-level interface
@@ -91,10 +87,11 @@ ERROR if buffer has no filename."
   "Visit the file currently set for use in
 `typit-literature-test' and jump to the current point."
   (interactive)
-  ;; if typit literature test hasn't been run then the variable will be NIL
   (if (not typit-literature--text-file)
-      (typit--load-state))
-  (find-file (f-expand typit-literature--text-file typit-literature-dir))
+      (error "typit-literature--text-file = NIL"))
+  (if (not (f-exists-p typit-literature--text-file))
+      (error "File does not exist: %s" typit-literature--text-file))
+  (find-file typit-literature--text-file)
   (goto-char typit-literature--file-marker))
 
 ;;;###autoload
@@ -108,4 +105,5 @@ See `typit-literature--text-file'."
                    'typit-literature--prepare-words
                    'typit-literature--end-of-test-cleanup
                    'typit-literature--get-report-string
-                   'typit-literature--get-end-options))
+                   'typit-literature--get-end-options
+                   'typit-literature--save-state))
