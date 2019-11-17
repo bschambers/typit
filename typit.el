@@ -84,6 +84,10 @@
   '((t (:inherit font-lock-constant-face)))
   "Face used to render statistical values after typing.")
 
+(defface typit-paragraph-break-face
+  '((t (:inherit warning)))
+  "Face used to render paragraph break.")
+
 (defcustom typit-line-length 80
   "Length of line of words to use."
   :tag  "Length of line of words"
@@ -205,7 +209,16 @@ encountered."
 
 (defun typit--render-line (words)
   "Transform list of words WORDS into one string."
-  (mapconcat #'identity words " "))
+  (let* ((end-offset (if (equal typit--paragraph-break-symbol (car (last words)))
+                         (length typit--paragraph-break-symbol)
+                       0))
+         (line (mapconcat #'identity words " "))
+         (len (length line))
+         (split-pt (- len end-offset)))
+    ;; hilight paragraph breaks
+    (put-text-property 0 split-pt 'face 'typit-normal-text line)
+    (put-text-property split-pt len 'face 'typit-paragraph-break-face line)
+    line))
 
 (defun typit--render-lines (offset first-line second-line)
   "Render the both lines in current buffer.
@@ -216,11 +229,9 @@ rendered with `typit--render-line'."
   (let ((inhibit-read-only t))
     (delete-region offset (point-max))
     (goto-char offset)
-    (insert (propertize (typit--render-line first-line)
-                        'face 'typit-normal-text)
+    (insert (typit--render-line first-line)
             "\n")
-    (insert (propertize (typit--render-line second-line)
-                        'face 'typit-normal-text)
+    (insert (typit--render-line second-line)
             "\n")))
 
 (defun typit--select-word (offset current-word &optional unselect)
