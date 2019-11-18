@@ -98,7 +98,7 @@
   :tag  "Test duration in seconds"
   :type 'integer)
 
-(defvar typit--paragraph-break-symbol "<<<BREAK>>>")
+(defvar typit--paragraph-break-symbol "<BREAK>")
 
 (defvar typit--next-word nil
   "The next word to be used.")
@@ -245,6 +245,17 @@ rendered with `typit--render-line'."
             "\n")
     (insert (typit--render-line second-line)
             "\n")))
+
+(defun typit--set-eol-face-to (line-num new-face)
+  "Sets face for paragraph break at end of line."
+  (save-excursion
+    (let ((inhibit-read-only t))
+      (goto-line line-num)
+      (end-of-line)
+      (add-text-properties
+       (- (point) (length typit--paragraph-break-symbol))
+       (point)
+       (list 'face new-face)))))
 
 (defun typit--select-word (offset current-word &optional unselect)
   "Change font properties of a word.
@@ -446,6 +457,26 @@ are used to calculate statistics."
                    (if (cl-every #'identity current-word)
                        (setq good-words (1+ good-words))
                      (setq bad-words (1+ bad-words)))
+
+                   ;; check whether next word is paragraph break
+                   (if (equal (car r) typit--paragraph-break-symbol)
+                       ;; YES: skip word and end line
+                       (progn
+                         (setq r nil)
+                         ;; RETURN = good/SPACE = bad
+                         (if (= ch #x0D)
+                             (progn
+                               (setq good-strokes (1+ good-strokes))
+                               (typit--set-eol-face-to 3 'typit-correct-char))
+                           (progn
+                             (setq bad-strokes (1+ bad-strokes))
+                             (typit--set-eol-face-to 3 'typit-wrong-char))))
+                     ;; NOT paragraph break
+                     ;; SPACE = good/RETURN = bad
+                     (if (= ch #x20)
+                         (setq good-strokes (1+ good-strokes))
+                       (setq bad-strokes (1+ bad-strokes))))
+
                    ;; update variables
                    (setq
                     first-line
@@ -460,24 +491,7 @@ are used to calculate statistics."
                     (+ bad-strokes  (cl-count nil current-word))
                     micro-index  0
                     current-word nil) ; set current word to nil
-                   ;; check whether next word is paragraph break
-                   (if (equal (car first-line) typit--paragraph-break-symbol)
-                       ;; YES: skip word and end line
-                       (progn
-                         (setq
-                          first-line second-line
-                          second-line (typit--generate-line)
-                          word-offset init-offset
-                          r nil)
-                         ;; RETURN = good/SPACE = bad
-                         (if (= ch #x0D)
-                             (setq good-strokes (1+ good-strokes))
-                           (setq bad-strokes (1+ bad-strokes))))
-                     ;; NOT paragraph break
-                     ;; SPACE = good/RETURN = bad
-                     (if (= ch #x20)
-                         (setq good-strokes (1+ good-strokes))
-                       (setq bad-strokes (1+ bad-strokes))))
+
                    ;; if line ended, save old first-line then render new lines
                    (unless r
                      (progn
