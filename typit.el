@@ -106,6 +106,9 @@
 (defvar typit--save-file "~/.emacs.d/.typit"
   "File to save typit state info between sessions.")
 
+(defvar typit--all-lines nil
+  "All of the lines used so far.")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; mode variables
@@ -160,8 +163,17 @@
       (load typit--save-file)
     (error "Save-file does not exist: %s" typit--save-file)))
 
+(defun typit--get-line-of-buffer (line-num)
+  "Gets the line at LINE-NUM and returns it as a string."
+  (save-excursion
+    (goto-line line-num)
+    (beginning-of-line)
+    (let ((beg (point)))
+      (end-of-line)
+      (buffer-substring beg (point)))))
+
 (defun typit--split-string-convert-paragraph-breaks (text)
-  "Splits TEXT on whitespace whilst converting paragraph breaks `typit--paragraph-break-symbol'.
+  "Splits TEXT on whitespace whilst converting paragraph breaks to `typit--paragraph-break-symbol'.
 
 Paragraph break is interpreted as being two or more consecutive
 newlines, optionally with whitespace in between them. Any single
@@ -357,14 +369,10 @@ are used to calculate statistics."
 
     ;; body
     (insert
-     ;; mode-specific text
+     (propertize (format "Typit results (test duration: %d seconds)" typit-test-time) 'face 'typit-title)
+     "\n\n"
      (if typit--report-string-function
          (propertize (funcall typit--report-string-function) 'face 'typit-title))
-     ;; generic info
-     (propertize (format "Test Duration: %d seconds" typit-test-time) 'face 'typit-title)
-     "\n\n"
-     (propertize "Your results" 'face 'typit-title)
-     "\n\n"
      (propertize "Words per minute (WPM)" 'face 'typit-statistic)
      "  "
      (propertize (format "%4d" (round (/ good-strokes (/ total-time 12))))
@@ -392,12 +400,14 @@ are used to calculate statistics."
      "              "
      (propertize (format "%6.2f %%" (* 100 (/ (float good-strokes) (+ good-strokes bad-strokes))))
                  'face 'typit-value)
-     "\n")))
+     "\n\n"
+     (mapconcat 'identity (reverse typit--all-lines) "\n"))))
 
 (defun typit--test ()
   "Load stored state, run `init-test-function' then run typing test."
 
   ;; setup
+  (setq typit--all-lines nil)
   (typit--load-state)
   (if typit--init-test-function
       (funcall typit--init-test-function))
@@ -468,12 +478,17 @@ are used to calculate statistics."
                      (if (= ch #x20)
                          (setq good-strokes (1+ good-strokes))
                        (setq bad-strokes (1+ bad-strokes))))
-                   ;; if line ended, render new lines
+                   ;; if line ended, save old first-line then render new lines
                    (unless r
-                     (typit--render-lines init-offset first-line second-line))
+                     (progn
+                       (push (typit--get-line-of-buffer 3) typit--all-lines)
+                       (typit--render-lines init-offset first-line second-line)))
                    (typit--select-word word-offset (car first-line)))
                  (let ((total-time (- (float-time) test-started)))
                    (when (>= total-time typit-test-time)
+                     ;; save text from buffer before quitting
+                     (push (typit--get-line-of-buffer 3) typit--all-lines)
+                     (push (typit--get-line-of-buffer 4) typit--all-lines)
                      (quit-restore-window window 'kill)
                      (throw 'total-time total-time)))))
               ;; backspace

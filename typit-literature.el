@@ -54,7 +54,7 @@
         (+ good-strokes bad-strokes typit-literature--file-marker)))
 
 (defun typit-literature--get-report-string ()
-  (format "Literature Test --- File: %s --- position: %d\n\nFull file path: %s\n\n"
+  (format "Literature Test --- File: %s --- position: %d\n\nPath: %s\n\n"
           (f-filename typit-literature--text-file)
           typit-literature--file-marker
           typit-literature--text-file))
