@@ -98,6 +98,16 @@
   :tag  "Test duration in seconds"
   :type 'integer)
 
+(defcustom typit-num-lines-above 2
+  "Number of lines to show at one time during typing test."
+  :tag "Number of completed lines to show above the active line"
+  :type 'integer)
+
+(defcustom typit-num-lines-below 2
+  "Number of lines to show at one time during typing test."
+  :tag "Number of upcoming lines to show below the active line"
+  :type 'integer)
+
 (defvar typit--paragraph-break-symbol "<BREAK>")
 
 (defvar typit--next-word nil
@@ -106,7 +116,7 @@
 (defvar typit--save-file "~/.emacs.d/.typit"
   "File to save typit state info between sessions.")
 
-(defvar typit--all-lines nil
+(defvar typit--used-lines nil
   "All of the lines used so far.")
 
 
@@ -232,7 +242,7 @@ encountered."
     (put-text-property split-pt len 'face 'typit-paragraph-break-face line)
     line))
 
-(defun typit--render-lines (offset first-line second-line)
+(defun typit--render-lines (offset lines-list)
   "Render the both lines in current buffer.
 
 The lines are placed beginning from OFFSET (text from OFFSET to
@@ -241,10 +251,8 @@ rendered with `typit--render-line'."
   (let ((inhibit-read-only t))
     (delete-region offset (point-max))
     (goto-char offset)
-    (insert (typit--render-line first-line)
-            "\n")
-    (insert (typit--render-line second-line)
-            "\n")))
+    (dolist (line lines-list)
+    (insert (typit--render-line line) "\n"))))
 
 (defun typit--set-eol-face-to (line-num new-face)
   "Sets face for paragraph break at end of line."
@@ -412,21 +420,21 @@ are used to calculate statistics."
      (propertize (format "%6.2f %%" (* 100 (/ (float good-strokes) (+ good-strokes bad-strokes))))
                  'face 'typit-value)
      "\n\n"
-     (mapconcat 'identity (reverse typit--all-lines) "\n"))))
+     (mapconcat 'identity (reverse typit--used-lines) "\n"))))
 
 (defun typit--test ()
   "Load stored state, run `init-test-function' then run typing test."
 
   ;; setup
-  (setq typit--all-lines nil)
+  (setq typit--used-lines nil)
   (typit--load-state)
   (if typit--init-test-function
       (funcall typit--init-test-function))
 
   ;; run test
-  (let ((first-line   (typit--generate-line))
-        (second-line  (typit--generate-line))
+  (let ((all-lines nil)
         (test-started nil)
+        (active-line  0) ; line number where the typing happens
         (init-offset  0)
         (word-offset  0)
         (good-strokes 0)
@@ -435,6 +443,12 @@ are used to calculate statistics."
         (bad-words    0)
         (micro-index  0)
         (current-word nil)) ; list of booleans (good/bad strokes for current word)
+
+    ;; init lines
+    (dotimes (n (+ 1 typit-num-lines-below))
+      (push (typit--generate-line) all-lines))
+    (setq all-lines (reverse all-lines))
+
     (typit--with-buffer
       (lambda (window _value)
         (message "Timer will start when you start typing…")
@@ -452,25 +466,25 @@ are used to calculate statistics."
               ((or (= ch #x20)
                    (= ch #x0D))
                (when current-word
-                 (typit--select-word word-offset (car first-line) t) ; unselect word
-                 (cl-destructuring-bind (w . r) first-line
+                 (typit--select-word word-offset (car (car all-lines)) t) ; unselect word
+                 (cl-destructuring-bind (w . r) (car all-lines)
                    (if (cl-every #'identity current-word)
                        (setq good-words (1+ good-words))
                      (setq bad-words (1+ bad-words)))
 
                    ;; check whether next word is paragraph break
                    (if (equal (car r) typit--paragraph-break-symbol)
-                       ;; YES: skip word and end line
+                       ;; PARAGRAPH BREAK: skip word and end line
                        (progn
                          (setq r nil)
                          ;; RETURN = good/SPACE = bad
                          (if (= ch #x0D)
                              (progn
                                (setq good-strokes (1+ good-strokes))
-                               (typit--set-eol-face-to 3 'typit-correct-char))
+                               (typit--set-eol-face-to active-line 'typit-correct-char))
                            (progn
                              (setq bad-strokes (1+ bad-strokes))
-                             (typit--set-eol-face-to 3 'typit-wrong-char))))
+                             (typit--set-eol-face-to active-line 'typit-wrong-char))))
                      ;; NOT paragraph break
                      ;; SPACE = good/RETURN = bad
                      (if (= ch #x20)
@@ -479,61 +493,97 @@ are used to calculate statistics."
 
                    ;; update variables
                    (setq
-                    first-line
-                    (or r second-line)
-                    second-line
-                    (if r second-line (typit--generate-line))
-                    word-offset
-                    (if r (+ word-offset 1 (length w)) init-offset)
                     good-strokes
                     (+ good-strokes (cl-count t current-word))
                     bad-strokes
                     (+ bad-strokes  (cl-count nil current-word))
                     micro-index  0
-                    current-word nil) ; set current word to nil
+                    current-word nil ; set current word to nil
+                    word-offset
+                    (if r (+ word-offset 1 (length w)) init-offset))
 
-                   ;; if line ended, save old first-line then render new lines
+                    ;; move on to next word
+                    (setf (car all-lines) r)
+
+                    ;; IF LINE ENDED:
                    (unless r
                      (progn
-                       (push (typit--get-line-of-buffer 3) typit--all-lines)
-                       (typit--render-lines init-offset first-line second-line)))
-                   (typit--select-word word-offset (car first-line)))
+
+                       ;; add used line to used-lines
+                       (push (typit--get-line-of-buffer active-line) typit--used-lines)
+
+                       ;; scroll old lines
+                       (save-excursion
+                         (let ((inhibit-read-only t)
+                               (l-num (- active-line typit-num-lines-above))
+                               (a nil)
+                               (b nil))
+                           (dotimes (n typit-num-lines-above)
+                             (goto-line (+ n l-num))
+                             (setq a (point))
+                             (end-of-line)
+                             (setq b (point))
+                             (delete-region a b)
+                             (insert (typit--get-line-of-buffer (+ 1 n l-num))))))
+
+                       ;; add a new line at the end of the list
+                       (setf (cdr (last all-lines)) (cons (typit--generate-line) nil))
+                       ;; discard first line
+                       (setq all-lines (cdr all-lines))
+                       ;; re-render lines
+                       (goto-line active-line)
+                       (setq init-offset (point)
+                             word-offset init-offset)
+                       (typit--render-lines init-offset all-lines)))
+
+                   (typit--select-word word-offset (car (car all-lines))))
+
+                 ;; update time and check whether test has ended
                  (let ((total-time (- (float-time) test-started)))
                    (when (>= total-time typit-test-time)
                      ;; save text from buffer before quitting
-                     (push (typit--get-line-of-buffer 3) typit--all-lines)
-                     (push (typit--get-line-of-buffer 4) typit--all-lines)
+                     (dotimes (n (+ 1 typit-num-lines-below))
+                       (push (typit--get-line-of-buffer (+ n active-line)) typit--used-lines))
                      (quit-restore-window window 'kill)
                      (throw 'total-time total-time)))))
+
               ;; backspace
               ((= ch #x7f)
                (setq micro-index (max 0 (1- micro-index)))
                (pop current-word)
                (typit--highlight-diff-char (+ word-offset micro-index) nil t))
+
               ;; correct stroke
-              ((and (< micro-index (length (car first-line)))
-                    (= ch (elt (car first-line) micro-index)))
+              ((and (< micro-index (length (car (car all-lines))))
+                    (= ch (elt (car (car all-lines)) micro-index)))
                (push t current-word)
                (typit--highlight-diff-char (+ word-offset micro-index) t)
                (setq micro-index (1+ micro-index)))
+
               ;; everything else = incorrect stroke
               (t
-               (when (< micro-index (length (car first-line)))
+               (when (< micro-index (length (car (car all-lines))))
                  (push nil current-word)
                  (typit--highlight-diff-char (+ word-offset micro-index) nil)
                  (setq micro-index (1+ micro-index)))))))
+
          good-strokes
          bad-strokes
          good-words
          bad-words))
+
       ;; ↓ body (construction of the buffer contents)
       (insert (propertize
                (format "Typit (%d second test)" typit-test-time)
                'face 'typit-title) "\n\n")
+
+      (dotimes (n typit-num-lines-above) (insert "\n"))
+
       (setq init-offset (point)
+            active-line (line-number-at-pos)
             word-offset init-offset)
-      (typit--render-lines init-offset first-line second-line)
-      (typit--select-word word-offset (car first-line)))))
+      (typit--render-lines init-offset all-lines)
+      (typit--select-word word-offset (car (car all-lines))))))
 
 (defun typit--run-test (title
                    pick-word-func
