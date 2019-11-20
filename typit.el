@@ -574,7 +574,7 @@ are used to calculate statistics."
 
       ;; ↓ body (construction of the buffer contents)
       (insert (propertize
-               (format "Typit (%d second test)" typit-test-time)
+               (format "%s (%d seconds)" typit--mode-title  typit-test-time)
                'face 'typit-title) "\n\n")
 
       (dotimes (n typit-num-lines-above) (insert "\n"))

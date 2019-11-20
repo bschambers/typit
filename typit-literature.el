@@ -100,7 +100,7 @@ ERROR if buffer has no filename."
 
 See `typit-literature--text-file'."
   (interactive)
-  (typit--run-test "Typit Literature Test"
+  (typit--run-test (format "Typit Literature Test - using %s" (f-filename typit-literature--text-file))
                    'typit-literature--pick-word
                    'typit-literature--prepare-words
                    'typit-literature--end-of-test-cleanup

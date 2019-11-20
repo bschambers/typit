@@ -75,7 +75,7 @@ let-bind the variable and change it, it's recommended to use at
 least 1000 words so `typit-advanced-test' could work properly."
   (interactive "p")
   (setq typit-dictionary--dict-num-words num)
-  (typit--run-test "Typit Dictionary Test"
+  (typit--run-test (format "Typit Dictionary Test - %d words" typit-dictionary--dict-num-words)
                    'typit-dictionary--pick-word
                    'typit-dictionary--prepare-dict
                    nil
