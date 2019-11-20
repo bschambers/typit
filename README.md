@@ -15,9 +15,9 @@ There are two different types of play on offer:
   configurable inside your Emacs.
 * Literature test: the gameplay is identical to dictionary test although instead
   of random words picked from a dictionary, you type text from a specified
-  file. You can use any text file you like, and Emacs will save your position
-  between sessions for convenience so that you will always start just where you
-  left off last time.
+  file. You can use any text file you like, and Emacs will remember your
+  position between sessions for convenience so that you can start next time just
+  where you left off last time.
 
 ![Typit typing](https://raw.githubusercontent.com/mrkkrp/typit/gh-pages/typit-typing.png)
 
@@ -55,14 +55,7 @@ Some other useful user commands are also provided:
 * <kbd>M-x typit-set-marker-for-literature-test</kbd>: sets the starting point
   for `typit-literature-test` to the current point in the current file.
 
-## Save-state file
-
-Typit saves the values of some variables to file in order to ensure continuity
-between sessions.
-
-The default save file is `~/.emacs.d/.typit`
-
-## Customization
+## Customization and Persistence
 
 There are some configuration parameters that allow you change things like:
 
@@ -71,8 +64,16 @@ There are some configuration parameters that allow you change things like:
 * Location of dictionary directory (usually it's automatically detected)
 * Length of generated line of words (in characters)
 * Test duration in seconds
+* Text file to use in literature test
+* Point to start in literature file
 
 To access these, type <kbd>M-x customize-group RET typit RET</kbd>.
+
+The last two parameters can also be set by typing <kbd>M-x
+typit-set-marker-for-literature-file</kbd> in any text file at a point of your
+choosing. The file will be set and saved for future sessions. The starting point
+is saved and then updated automatically every time that you finish the
+literature test.
 
 ## Contribution
 
@@ -90,8 +91,16 @@ interface, `setq`, or with `let`-binding, and then run one of the commands
 that start the game (`typit-basic-test`, `typit-advanced-test`, or
 `typit-test`).
 
+### Additional Note
+I have made quite extensive modifications to Mark Karpov's version in order to
+add the literature test feature, paragraph breaks and multi-line scrolling
+etc. At time of writing this I am not very experienced in writing Lisp code and
+would be very happy to see anyone else improve it or to receive any contructive
+criticism. (B. S. Chambers)
+
 ## License
 
-Copyright © 2016–present Mark Karpov
+Original work Copyright © 2016–present Mark Karpov
+Modified work Copyright © 2019–present B. S. Chambers
 
 Distributed under GNU GPL, version 3.

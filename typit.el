@@ -113,9 +113,6 @@
 (defvar typit--next-word nil
   "The next word to be used.")
 
-(defvar typit--save-file "~/.emacs.d/.typit"
-  "File to save typit state info between sessions.")
-
 (defvar typit--used-lines nil
   "All of the lines used so far.")
 
@@ -148,30 +145,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Low-level functions
 
-(defun typit--save-vars-to-file (&rest varlist)
-  "Simplistic dumping of variables in VARLIST into file `typit--save-file'."
-  (save-excursion
-    (let ((buf (find-file-noselect typit--save-file)))
-      (set-buffer buf)
-      (erase-buffer)
-      (typit--dump-vars-to-buffer varlist buf)
-      (save-buffer)
-      (kill-buffer))))
-
-(defun typit--dump-vars-to-buffer (varlist buffer)
-  "Insert into buffer the setq statements to recreate the variables in VARLIST."
+(defun typit--save-vars-to-customize (&rest varlist)
+  "Save variables using customize."
   (dolist (var varlist)
-    (print (list 'setq var (list 'quote (symbol-value var)))
-           buffer)))
+    (customize-save-variable var (eval var))))
 
 (defun typit--save-state ()
   (if typit--save-function
       (funcall typit--save-function)))
-
-(defun typit--load-state ()
-  (if (f-exists-p typit--save-file)
-      (load typit--save-file)
-    (error "Save-file does not exist: %s" typit--save-file)))
 
 (defun typit--get-line-of-buffer (line-num)
   "Gets the line at LINE-NUM and returns it as a string."
@@ -442,7 +423,6 @@ are used to calculate statistics."
 
   ;; setup
   (setq typit--used-lines nil)
-  (typit--load-state)
   (if typit--init-test-function
       (funcall typit--init-test-function))
 
@@ -591,9 +571,7 @@ are used to calculate statistics."
       (insert (propertize
                (format "%s (%d seconds)" typit--mode-title  typit-test-time)
                'face 'typit-title) "\n\n")
-
       (dotimes (n typit-num-lines-above) (insert "\n"))
-
       (setq init-offset (point)
             active-line (line-number-at-pos)
             word-offset init-offset)

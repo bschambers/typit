@@ -6,11 +6,17 @@
   (when load-file-name
     (f-join (f-parent load-file-name) "literature" "default.txt")))
 
-(defvar typit-literature--text-file typit-literature--default-text-file
-  "File name of the text file used for `typit-literature-test'.")
+(defcustom typit-literature--text-file typit-literature--default-text-file
+  "File name of the text file used for `typit-literature-test'."
+  :group 'typit
+  :tag "Text file for literature test"
+  :type 'file)
 
-(defvar typit-literature--file-marker 0
-  "Current position in the literature file.")
+(defcustom typit-literature--file-marker 0
+  "Current position in the literature file."
+  :group 'typit
+  :tag "Current position in literature-test file"
+  :type 'integer)
 
 (defvar typit-literature--words nil
   "List of words used for `typit-literature-test'.")
@@ -63,7 +69,7 @@
   '(((?v V) "(v)isit file at point" typit-visit-literature-file)))
 
 (defun typit-literature--save-state ()
-  (typit--save-vars-to-file 'typit-literature--text-file 'typit-literature--file-marker))
+  (typit--save-vars-to-customize 'typit-literature--text-file 'typit-literature--file-marker))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -78,7 +84,7 @@ ERROR if buffer has no filename."
       (progn
         (setq typit-literature--text-file (buffer-file-name))
         (setq typit-literature--file-marker (point))
-        (typit--save-state))
+        (typit-literature--save-state))
     (error
      "Error in typit-set-marker-for-literature-test: could not get file name for buffer %s"
      (buffer-name))))
