@@ -300,6 +300,19 @@ non-NIL CORRECT.  If CLEAR is not NIL, just clear that char."
               'typit-correct-char
             'typit-wrong-char)))))))
 
+(defun typit--hilight-end-options (str)
+  "Hilight any single character enclosed in parentheses."
+  (let ((parts-a (split-string str "[()]"))
+        (parts-b nil))
+    (dolist (p parts-a)
+      (if (= 1 (length p))
+          (progn
+            (push "(" parts-b)
+            (push (propertize p 'face 'typit-correct-char) parts-b)
+            (push ")" parts-b))
+        (push p parts-b)))
+    (apply 'concat (reverse parts-b))))
+
 (defmacro typit--with-buffer (quit-function &rest body)
   "Perform actions using a new temporary Typit buffer and window.
 
@@ -349,6 +362,8 @@ The window is guaranteed to be killed at the end of the day."
     ;; build prompt message
     (dolist (item options)
       (setq msg (concat msg (if msg " | " "Choose an option: ") (nth 1 item))))
+
+    (setq msg (typit--hilight-end-options msg))
 
     ;; run menu
     (let ((continue t)
