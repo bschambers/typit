@@ -95,12 +95,13 @@ that start the game (`typit-basic-test`, `typit-advanced-test`, or
 I have made quite extensive modifications to Mark Karpov's version in order to
 add the literature test feature, paragraph breaks and multi-line scrolling
 etc. At time of writing this I am not very experienced in writing Lisp code and
-would be very happy to see anyone else improve it or to receive any contructive
+would be very happy to see anyone else improve it or to receive any constructive
 criticism. (B. S. Chambers)
 
 ## License
 
 Original work Copyright © 2016–present Mark Karpov
+
 Modified work Copyright © 2019–present B. S. Chambers
 
 Distributed under GNU GPL, version 3.
