@@ -1,24 +1,26 @@
-This is the default text for typit literature test.
+the cat
 
-In order to use your own text, navigate to the desired text file and position
-the cursor at the point where you would like the test to begin, then type M-x
-typit-set-marker-for-literature-test.
+sat on the mat
 
-DEFAULT TEXT FOLLOWS:
+and the dog
 
-Bannana Man breaking the land speed record on his unicycle. He speeds across the
-mud flats in a streak of blue and yellow. Close behind him is Gordon Ramsay in a
-motorised bathtub, and in third place, Tony Blair riding Rod Hull and
-Emu. Grotbags isn't taking part this year because she's going to a birthday
-party hosted by Barbarella. It's windy out, so she's put on her fur hat and
-fitted the aerodynamic body kit on her broomstick to reduce drag. Barbarella
-won't be going to her own party because she just had some bad news - that Trevor
-from One Direction still hasn't replied to her text message.
+sat on the log
+
+and the horse
+
+sat on the gorse
+
+Bannana Man breaking the land speed record on his unicycle. He races across the
+mud flats of East Anglia in a streak of blue and yellow. Close behind him is
+Gordon Ramsay in a motorised bathtub, and in third place, Tony Blair riding Rod
+Hull and Emu. Grotbags isn't taking part this year because she's going to a
+birthday party hosted by Barbarella. It's windy out, so she's put on her fur hat
+and fitted the aerodynamic body kit on her broomstick to reduce drag. Barbarella
+won't be going to her own party because she just had some bad news - Trevor from
+One Direction still hasn't replied to her text message.
 
 Meanwhile Jacob Rees-Mogg is touching up the paintwork on his life-sized Taj
 Mahal replica. Moss green for the window frames, with mirror-tinted double
 glazing inside the casements, and a lovely shade of mauve for all of the column
 capitals. He built the thing over a period of two hundred million years out of
 individually carved grains of rice, all fitted together with no mortar.
-
-Text copyright: 2019, B. S. Chambers
