@@ -54,10 +54,43 @@
             (typit--split-string-convert-paragraph-breaks
              (buffer-substring-no-properties typit-literature--file-marker end-point))))))
 
+(defun typit-literature--point-of-nearest-instance (regex)
+  "Search backwards and forwards and return the point of the
+nearest match found for REGEX, or the start point if no instance
+is found."
+  (save-excursion
+    (let* ((start (point))
+           (back-pos 0)
+           (forward-pos 0))
+      ;; find back/forward pos: either or both of these may be NIL
+      (setq back-pos
+            (search-backward-regexp regex (point-min) t))
+      (goto-char start)
+      (setq forward-pos
+            (search-forward-regexp regex (point-max) t))
+      ;; which position to return?
+      (if (and back-pos forward-pos)
+          ;; neither is NIL: return nearest
+          (if (< (abs (- start back-pos))
+                 (abs (- forward-pos start)))
+              back-pos
+            forward-pos)
+        ;; one or both is NIL: return the other one, or start point as default
+        (or back-pos
+            forward-pos
+            start)))))
+
 (defun typit-literature--end-of-test-cleanup (good-strokes bad-strokes)
   ;; shift file-marker along by number of strokes
   (setq typit-literature--file-marker
-        (+ good-strokes bad-strokes typit-literature--file-marker)))
+        (+ typit-literature--file-marker good-strokes bad-strokes))
+  ;; adjustment: look for next word in file
+  (setq typit-literature--file-marker
+        (with-current-buffer (find-file-noselect typit-literature--text-file)
+          (goto-char typit-literature--file-marker)
+          (typit-literature--point-of-nearest-instance
+           ;; \\b = regexp word-boundary
+           (concat "\\b" typit--next-word-to-type "\\b")))))
 
 (defun typit-literature--get-report-string ()
   (format "Literature Test --- File: %s --- position: %d\n\nPath: %s\n\n"

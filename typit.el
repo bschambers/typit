@@ -111,7 +111,10 @@
 (defvar typit--paragraph-break-symbol "<BREAK>")
 
 (defvar typit--next-word nil
-  "The next word to be used.")
+  "The next word to be picked.")
+
+(defvar typit--next-word-to-type nil
+  "The next word to be typed.")
 
 (defvar typit--used-lines nil
   "All of the lines used so far.")
@@ -233,7 +236,7 @@ rendered with `typit--render-line'."
     (delete-region offset (point-max))
     (goto-char offset)
     (dolist (line lines-list)
-    (insert (typit--render-line line) "\n"))))
+      (insert (typit--render-line line) "\n"))))
 
 (defun typit--set-eol-face-to (line-num new-face)
   "Sets face for paragraph break at end of line."
@@ -497,10 +500,11 @@ are used to calculate statistics."
                     word-offset
                     (if r (+ word-offset 1 (length w)) init-offset))
 
-                    ;; move on to next word
-                    (setf (car all-lines) r)
+                   ;; move on to next word
+                   (setf (car all-lines) r)
+                   (setq typit--next-word-to-type (car (car all-lines)))
 
-                    ;; IF LINE ENDED:
+                   ;; IF LINE ENDED:
                    (unless r
                      (progn
 
