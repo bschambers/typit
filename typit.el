@@ -119,9 +119,24 @@
 (defvar typit--used-lines nil
   "All of the lines used so far.")
 
+(defvar typit--symbol-substitution-hash-table (make-hash-table :test 'equal))
+(puthash "“" "\"" typit--symbol-substitution-hash-table)
+(puthash "”" "\"" typit--symbol-substitution-hash-table)
+(puthash "‘" "'" typit--symbol-substitution-hash-table)
+(puthash "’" "'" typit--symbol-substitution-hash-table)
+(puthash " " "_" typit--symbol-substitution-hash-table)
+(puthash "…" "..." typit--symbol-substitution-hash-table) ; elipsis
+(puthash "–" "-" typit--symbol-substitution-hash-table)
+(puthash "—" "-" typit--symbol-substitution-hash-table)
+(puthash "é" "e" typit--symbol-substitution-hash-table) ; acute accent
+(puthash "è" "e" typit--symbol-substitution-hash-table) ; grave accent
+(puthash "⁂" "*" typit--symbol-substitution-hash-table)
+(puthash "Æ" "AE" typit--symbol-substitution-hash-table)
+;; (puthash "_" "" typit--symbol-substitution-hash-table)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; mode variables
+;; Mode variables
 
 (defvar typit--mode-title nil
   "The title of the mode currently in operation.")
@@ -157,15 +172,6 @@
   (if typit--save-function
       (funcall typit--save-function)))
 
-(defun typit--get-line-of-buffer (line-num)
-  "Gets the line at LINE-NUM and returns it as a string."
-  (save-excursion
-    (goto-line line-num)
-    (beginning-of-line)
-    (let ((beg (point)))
-      (end-of-line)
-      (buffer-substring beg (point)))))
-
 (defun typit--split-string-convert-paragraph-breaks (text)
   "Splits TEXT on whitespace whilst converting paragraph breaks to `typit--paragraph-break-symbol'.
 
@@ -178,6 +184,15 @@ discarded."
    (split-string
     (replace-regexp-in-string "\n[ *\n]+" (concat " " typit--paragraph-break-symbol " ") text)
     "[ \n\f\t\r\v]+")))
+
+(defun typit--get-line-of-buffer (line-num)
+  "Gets the line at LINE-NUM and returns it as a string."
+  (save-excursion
+    (goto-line line-num)
+    (beginning-of-line)
+    (let ((beg (point)))
+      (end-of-line)
+      (buffer-substring beg (point)))))
 
 (defun typit--pick-word ()
   "Pick a word using `typit--pick-word-function'"
@@ -598,6 +613,24 @@ are used to calculate statistics."
         typit--end-options-function end-options-func
         typit--save-function save-func)
   (typit--test))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Top Level Interface
+
+(defun typit-replace-special-characters-in-buffer ()
+  (interactive)
+  (let ((hash typit--symbol-substitution-hash-table)
+        (count 0))
+
+    (save-excursion
+      (dolist (k (hash-table-keys hash))
+
+        (goto-char (point-min))
+        (while (search-forward k nil t)
+          (replace-match (gethash k hash) nil t)
+          (setq count (1+ count)))))
+    (message "%d replacements done in buffer" count)))
 
 (provide 'typit)
 

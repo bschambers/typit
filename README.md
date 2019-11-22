@@ -54,6 +54,9 @@ Some other useful user commands are also provided:
   and jump to the current point.
 * <kbd>M-x typit-set-marker-for-literature-test</kbd>: sets the starting point
   for `typit-literature-test` to the current point in the current file.
+* <kbd>M-x typit-replace-special-characters-in-buffer</kbd>: replaces certain
+  special characters with easier-to-type alternatives. You can use this to help
+  cleanup and prepare text files for use in literature test.
 
 ## Customization and Persistence
 
@@ -85,8 +88,42 @@ some things into consideration to ensure the best experience:
 * The file should end with two newlines in a row - this is how paragraph breaks
   are recongnised so if you don't have two newlines at the end then when
   wraparound happens the last line and the first line will run together.
-* The file should not contain any characters which are not on a standard
-  computer keyboard.
+* The file should not contain any characters which are not typable on a standard
+  keyboard.
+
+You can use <kbd>M-x typit-replace-special-characters-in-buffer</kbd> to help
+convert or get rid of unwanted special characters. This will convert a number of
+common special characters e.g. “ or ” to ", é to e etc. Just visit the file, run
+the function and then save.
+
+You can add your own custom substitutions to extend what this function does by
+adding to the <kbd>typit--symbol-substitution-hash-table</kbd>. To make
+persistent additions you could put something like this in your .emacs file:
+
+<kbd>(eval-after-load 'typit
+  (puthash "_" "" typit--symbol-substitution-hash-table))
+</kbd>
+
+As an example, I used the above to clean up a copy of Jonathan Swift's *Polite
+Conversation* (pub. 1738) downloaded from Project Gutenberg, which was
+completely riddled with unnecessary underscores (I just got rid of them
+all). This is an excerpt of what it was like before cleanup:
+
+>    [_Lady_ Smart’_s Antichamber_.
+>
+>     _Lady_ Smart _and Lady_ Answerall _at the Tea-table_.
+>
+> _Lady Smart._ My Lord, your Lordship’s most humble Servant.
+>
+> _Ld. Sparkish._ Madam, you spoke too late; I was your Ladyship’s before.
+>
+> _Lady Smart._ Oh! Colonel, are you here!
+>
+> _Col._ As sure as you’re there, Madam.
+>
+> _Lady Smart._ Oh, Mr. _Neverout_! what, such a Man alive!
+>
+> _Neverout._ Ay, Madam; alive, and alive like to be, at your Ladyship’s Service.
 
 ## Contribution
 
