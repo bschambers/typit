@@ -71,9 +71,22 @@ To access these, type <kbd>M-x customize-group RET typit RET</kbd>.
 
 The last two parameters can also be set by typing <kbd>M-x
 typit-set-marker-for-literature-file</kbd> in any text file at a point of your
-choosing. The file will be set and saved for future sessions. The starting point
-is saved and then updated automatically every time that you finish the
-literature test.
+choosing. The file will remain set until you set it to something else but the
+starting point is updated automatically every time that you reach the end of the
+literature test, meaning that you can very easily type throught the whole text
+in sequence if you desire. If you reach the end of the text file then Typit will
+loop back around to the beginning.
+
+## Preparing Text Files for the Literature Test
+
+Any text file can be used for the literature test, although you may want to take
+some things into consideration to ensure the best experience:
+
+* The file should end with two newlines in a row - this is how paragraph breaks
+  are recongnised so if you don't have two newlines at the end then when
+  wraparound happens the last line and the first line will run together.
+* The file should not contain any characters which are not on a standard
+  computer keyboard.
 
 ## Contribution
 
