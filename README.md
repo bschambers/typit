@@ -9,15 +9,14 @@ until time is up (by default it's one minute).
 
 There are two different types of play on offer:
 
-* Dictionary test: where you type words that are picked randomly from N most
-  frequent words in the language you're practicing. This is quite similar to the
-  “10 fast fingers” tests, with the difference that it's playable and fully
-  configurable inside your Emacs.
-* Literature test: the gameplay is identical to dictionary test although instead
-  of random words picked from a dictionary, you type text from a specified
-  file. You can use any text file you like, and Emacs will remember your
-  position between sessions for convenience so that you can start next time just
-  where you left off last time.
+* Test from Dictionary: where you type words that are picked randomly from N
+  most frequent words in the language you're practicing. This is quite similar
+  to the “10 fast fingers” tests, with the difference that it's playable and
+  fully configurable inside your Emacs.
+* Test from File: the gameplay is identical although instead of random words
+  picked from a dictionary, you type text from a specified file. You can use any
+  text file you like, and Emacs will remember your position between sessions for
+  convenience so that you can start next time just where you left off.
 
 ![Typit typing](https://raw.githubusercontent.com/mrkkrp/typit/gh-pages/typit-typing.png)
 
@@ -37,11 +36,11 @@ Use one of these commands to launch Typit:
   words in the dictionary.
 * <kbd>M-x typit-advanced-test RET</kbd>: dictionary test using the 1000 most
   common words in the dictionary.
-* <kbd>M-x typit-dictionary-test RET</kbd>: dictionary test with a numeric
+* <kbd>M-x typit-from-dict-test RET</kbd>: dictionary test with a numeric
   argument specifying how many words to use (note that default dictionary has
   1000 words total at the moment).
-* <kbd>M-x typit-literature-test RET</kbd>: literature test using the currently
-  saved literature file, or the default file if no other has been chosen.
+* <kbd>M-x typit-from-file RET</kbd>: literature test using the currently saved
+  literature file, or the default file if no other has been chosen.
 
 The Typit window should appear (see the picture above). Timer will start when
 you start typing. When you are done, the following statistics will appear:
@@ -50,13 +49,13 @@ you start typing. When you are done, the following statistics will appear:
 
 Some other useful user commands are also provided:
 
-* <kbd>M-x typit-visit-literature-file</kbd>: visit the current literature file
-  and jump to the current point.
-* <kbd>M-x typit-set-marker-for-literature-test</kbd>: sets the starting point
-  for `typit-literature-test` to the current point in the current file.
+* <kbd>M-x typit-visit-text-file</kbd>: visit the current text file and jump to
+  the current point.
+* <kbd>M-x typit-set-text-file-marker</kbd>: sets the starting point for
+  `typit-from-file` to the current point in the current file.
 * <kbd>M-x typit-replace-special-characters-in-buffer</kbd>: replaces certain
   special characters with easier-to-type alternatives. You can use this to help
-  cleanup and prepare text files for use in literature test.
+  cleanup and prepare text files for use in from-file test.
 
 ## Customization and Persistence
 
@@ -67,23 +66,23 @@ There are some configuration parameters that allow you change things like:
 * Location of dictionary directory (usually it's automatically detected)
 * Length of generated line of words (in characters)
 * Test duration in seconds
-* Text file to use in literature test
-* Point to start in literature file
+* Text file to use
+* Point to start in text file
 
 To access these, type <kbd>M-x customize-group RET typit RET</kbd>.
 
 The last two parameters can also be set by typing <kbd>M-x
-typit-set-marker-for-literature-file</kbd> in any text file at a point of your
+typit-set-text-file-marker</kbd> in any text file at a point of your
 choosing. The file will remain set until you set it to something else but the
 starting point is updated automatically every time that you reach the end of the
-literature test, meaning that you can very easily type throught the whole text
-in sequence if you desire. If you reach the end of the text file then Typit will
+from-file test, meaning that you can very easily type throught the whole text in
+sequence if you desire. If you reach the end of the text file then Typit will
 loop back around to the beginning.
 
-## Preparing Text Files for the Literature Test
+## Preparing Text Files for the From-File Test
 
-Any text file can be used for the literature test, although you may want to take
-some things into consideration to ensure the best experience:
+Any text file can be used, although you may want to take some things into
+consideration to ensure the best experience:
 
 * The file should end with two newlines in a row - this is how paragraph breaks
   are recongnised so if you don't have two newlines at the end then when
@@ -109,21 +108,21 @@ Conversation* (pub. 1738) downloaded from Project Gutenberg, which was
 completely riddled with unnecessary underscores (I just got rid of them
 all). This is an excerpt of what it was like before cleanup:
 
->    [_Lady_ Smart’_s Antichamber_.
+>    [\_Lady\_ Smart’\_s Antichamber\_.
 >
->     _Lady_ Smart _and Lady_ Answerall _at the Tea-table_.
+>     \_Lady\_ Smart \_and Lady\_ Answerall \_at the Tea-table\_.
 >
-> _Lady Smart._ My Lord, your Lordship’s most humble Servant.
+> \_Lady Smart.\_ My Lord, your Lordship’s most humble Servant.
 >
-> _Ld. Sparkish._ Madam, you spoke too late; I was your Ladyship’s before.
+> \_Ld. Sparkish.\_ Madam, you spoke too late; I was your Ladyship’s before.
 >
-> _Lady Smart._ Oh! Colonel, are you here!
+> \_Lady Smart.\_ Oh! Colonel, are you here!
 >
-> _Col._ As sure as you’re there, Madam.
+> \_Col.\_ As sure as you’re there, Madam.
 >
-> _Lady Smart._ Oh, Mr. _Neverout_! what, such a Man alive!
+> \_Lady Smart.\_ Oh, Mr. \_Neverout\_! what, such a Man alive!
 >
-> _Neverout._ Ay, Madam; alive, and alive like to be, at your Ladyship’s Service.
+> \_Neverout.\_ Ay, Madam; alive, and alive like to be, at your Ladyship’s Service.
 
 ## Contribution
 
@@ -143,7 +142,7 @@ that start the game (`typit-basic-test`, `typit-advanced-test`, or
 
 ### Additional Note
 I have made quite extensive modifications to Mark Karpov's version in order to
-add the literature test feature, paragraph breaks and multi-line scrolling
+add the from-file test feature, paragraph breaks and multi-line scrolling
 etc. At time of writing this I am not very experienced in writing Lisp code and
 would be very happy to see anyone else improve it or to receive any constructive
 criticism. (B. S. Chambers)

@@ -634,7 +634,7 @@ are used to calculate statistics."
 
 (provide 'typit)
 
-(load-file "typit-dictionary.el")
-(load-file "typit-literature.el")
+(load-file "typit-from-dict.el")
+(load-file "typit-from-file.el")
 
 ;;; typit.el ends here
