@@ -39,8 +39,8 @@ Use one of these commands to launch Typit:
 * <kbd>M-x typit-from-dict-test RET</kbd>: dictionary test with a numeric
   argument specifying how many words to use (note that default dictionary has
   1000 words total at the moment).
-* <kbd>M-x typit-from-file RET</kbd>: literature test using the currently saved
-  literature file, or the default file if no other has been chosen.
+* <kbd>M-x typit-from-file RET</kbd>: test using the currently set text file, or
+  the default file if no other has been chosen.
 
 The Typit window should appear (see the picture above). Timer will start when
 you start typing. When you are done, the following statistics will appear:
@@ -108,9 +108,9 @@ Conversation* (pub. 1738) downloaded from Project Gutenberg, which was
 completely riddled with unnecessary underscores (I just got rid of them
 all). This is an excerpt of what it was like before cleanup:
 
->    [\_Lady\_ Smart’\_s Antichamber\_.
+> [\_Lady\_ Smart’\_s Antichamber\_.
 >
->     \_Lady\_ Smart \_and Lady\_ Answerall \_at the Tea-table\_.
+> \_Lady\_ Smart \_and Lady\_ Answerall \_at the Tea-table\_.
 >
 > \_Lady Smart.\_ My Lord, your Lordship’s most humble Servant.
 >
