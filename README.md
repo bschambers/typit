@@ -99,30 +99,25 @@ You can add your own custom substitutions to extend what this function does by
 adding to the <kbd>typit--symbol-substitution-hash-table</kbd>. To make
 persistent additions you could put something like this in your .emacs file:
 
-<kbd>(eval-after-load 'typit
-  (puthash "_" "" typit--symbol-substitution-hash-table))
-</kbd>
+    (eval-after-load 'typit
+        (puthash "_" "" typit--symbol-substitution-hash-table))
 
 As an example, I used the above to clean up a copy of Jonathan Swift's *Polite
 Conversation* (pub. 1738) downloaded from Project Gutenberg, which was
 completely riddled with unnecessary underscores (I just got rid of them
 all). This is an excerpt of what it was like before cleanup:
 
-> [\_Lady\_ Smart’\_s Antichamber\_.
->
-> \_Lady\_ Smart \_and Lady\_ Answerall \_at the Tea-table\_.
->
-> \_Lady Smart.\_ My Lord, your Lordship’s most humble Servant.
->
-> \_Ld. Sparkish.\_ Madam, you spoke too late; I was your Ladyship’s before.
->
-> \_Lady Smart.\_ Oh! Colonel, are you here!
->
-> \_Col.\_ As sure as you’re there, Madam.
->
-> \_Lady Smart.\_ Oh, Mr. \_Neverout\_! what, such a Man alive!
->
-> \_Neverout.\_ Ay, Madam; alive, and alive like to be, at your Ladyship’s Service.
+    _Lady Smart._ My Lord, your Lordship’s most humble Servant.
+
+    _Ld. Sparkish._ Madam, you spoke too late; I was your Ladyship’s before.
+
+    _Lady Smart._ Oh! Colonel, are you here!
+
+    _Col._ As sure as you’re there, Madam.
+
+    _Lady Smart._ Oh, Mr. _Neverout_! what, such a Man alive!
+
+    _Neverout._ Ay, Madam; alive, and alive like to be, at your Ladyship’s Service.
 
 ## Contribution
 
